@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.20)
+project(NFS13Unlimiter CXX)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+add_library(NFS13Unlimiter SHARED src/main.cpp)
+set_target_properties(NFS13Unlimiter PROPERTIES OUTPUT_NAME "NFS13Unlimiter" SUFFIX ".asi")
+target_compile_options(NFS13Unlimiter PRIVATE /O2 /W3 /EHa)
