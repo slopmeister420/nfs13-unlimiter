@@ -117,8 +117,10 @@ bool Apply() {
     __try {
         const uint32_t nBanks = At<uint32_t>(kHeader + 4), nPools = At<uint32_t>(kHeader + 8),
                        nHeaps = At<uint32_t>(kHeader + 0x18);
-        const uintptr_t banks = At<uint32_t>(kHeader + 0x28), pools = At<uint32_t>(kHeader + 0x2c),
-                        heaps = At<uint32_t>(kHeader + 0x3c);
+        // the table pointers are offsets from the header until the startup turns them into addresses
+        auto table = [](uint32_t v) -> uintptr_t { return v < 0x10000 ? kHeader + v : v; };
+        const uintptr_t banks = table(At<uint32_t>(kHeader + 0x28)), pools = table(At<uint32_t>(kHeader + 0x2c)),
+                        heaps = table(At<uint32_t>(kHeader + 0x3c));
         if (nBanks != 0x13 || nPools != 0x19 || nHeaps != 0x10 || banks != 0x10c1554 || pools != 0x10c1aac ||
             heaps != 0x10c266c || strcmp(reinterpret_cast<const char*>(banks), "Root Bank")) {
             Log("memory map: unexpected header - nothing written");
