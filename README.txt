@@ -19,3 +19,6 @@ file if you have it. The plugin writes NFS13Unlimiter.log next to itself.
 
 Each change is checked against the game's original code first. On a different game version that
 change is skipped and the log says so.
+
+NFS13Unlimiter uses libmem (AGPL-3.0); its licence and those of the libraries it bundles are in
+the licenses folder.

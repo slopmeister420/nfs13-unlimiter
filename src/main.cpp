@@ -11,6 +11,7 @@
 //   from grows to fit them. Every bank above a grown pool or heap grows by the same amount.
 // Each group is checked against the original bytes first: if the exe differs, that group writes nothing.
 #include <windows.h>
+#include <libmem/libmem.h>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -158,8 +159,11 @@ bool Apply() {
                 }
         }
 
-        DWORD old;
-        VirtualProtect(reinterpret_cast<void*>(0x10c1000), 0x2000, PAGE_READWRITE, &old);
+        lm_prot_t old;
+        if (!LM_ProtMemory(0x10c1000, 0x2000, LM_PROT_RW, &old)) {
+            Log("memory map: could not unprotect it - nothing written");
+            return false;
+        }
         for (const PoolRaise& r : kPools) {
             uintptr_t p = Find(pools, nPools, 0x68, r.name);
             At<uint32_t>(p + 0x38) = r.newMem0;
@@ -185,7 +189,7 @@ bool Apply() {
             Log("memory map: bank %-20s main %6u KB, graphics %6u KB", reinterpret_cast<const char*>(b),
                 At<uint32_t>(b + 0x28) >> 10, At<uint32_t>(b + 0x2c) >> 10);
         }
-        VirtualProtect(reinterpret_cast<void*>(0x10c1000), 0x2000, old, &old);
+        LM_ProtMemory(0x10c1000, 0x2000, old, nullptr);
         return true;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         Log("memory map: fault while reading it - nothing written");
@@ -228,12 +232,12 @@ int State(const Patch& p) {
 }
 
 bool Write(const Patch& p) {
-    auto at = reinterpret_cast<uint8_t*>(p.site->addr + p.site->field);
-    DWORD old;
-    if (!VirtualProtect(at, 4, PAGE_EXECUTE_READWRITE, &old)) return false;
-    memcpy(at, &p.value, 4);
-    VirtualProtect(at, 4, old, &old);
-    return true;
+    const lm_address_t at = p.site->addr + p.site->field;
+    lm_prot_t old;
+    if (!LM_ProtMemory(at, 4, LM_PROT_XRW, &old)) return false;
+    const bool ok = LM_WriteMemory(at, reinterpret_cast<lm_bytearray_t>(&p.value), 4) == 4;
+    LM_ProtMemory(at, 4, old, nullptr);
+    return ok;
 }
 
 // writes the group once every site reads original; true when finished either way
@@ -294,6 +298,18 @@ DWORD WINAPI Install(LPVOID) {
     for (const Site& s : kSites) groups[0].patches.push_back({&s, Field(s) + kDelta});
     for (const Raise& r : kDrawListSites) groups[1].patches.push_back({&r.site, r.value});
     for (const Raise& r : kArenaSites) groups[2].patches.push_back({&r.site, r.value});
+    // every site must lie inside the game's image
+    lm_module_t exe;
+    if (!LM_FindModule("NFS13.exe", &exe)) {
+        Log("NFS13.exe not found - nothing written");
+        return 0;
+    }
+    for (const Group& g : groups)
+        for (const Patch& p : g.patches)
+            if (p.site->addr < exe.base || p.site->addr + p.site->len > exe.end) {
+                Log("%s: site %08x outside NFS13.exe - nothing written", g.name, p.site->addr);
+                return 0;
+            }
     const DWORD t0 = GetTickCount();
     for (;;) {
         const bool last = GetTickCount() - t0 > 120000;

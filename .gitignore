@@ -1,2 +1,5 @@
 build/
 dist/
+
+# fetched by fetch_deps.ps1
+/external/libmem-i686/

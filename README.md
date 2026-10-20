@@ -26,5 +26,9 @@
 Each group is checked against the original instructions first. If the exe differs, that group writes nothing and the
 log lists the sites that differ.
 
+    .etch_deps.ps1
     cmake -S . -B build -A Win32
     cmake --build build --config Release
+
+Memory access goes through [libmem](https://github.com/rdbo/libmem) (AGPL-3.0, linked statically), so this project
+is AGPL-3.0 as well; see `LICENSE`. `.\dist.ps1 -Version <v>` builds the release archive.
