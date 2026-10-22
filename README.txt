@@ -11,6 +11,7 @@ WHAT IT RAISES
 * Car locator buffer: 3 KB -> 8 KB per car (fixes a crash with cars that have many lights)
 * VFX pool: 540 -> 1080 resources (GLOBALEFFECTS.BNDL can hold more effects)
 * UI streaming pool: 2560 -> 5120 resources (fixes the world map hanging with extra ui elements)
+* Jack spots holding a car the game does not know read as empty instead of crashing the game
 
 INSTALLATION
 Install Ultimate ASI Loader (32-bit): https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases

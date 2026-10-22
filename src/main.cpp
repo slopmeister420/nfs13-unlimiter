@@ -293,6 +293,57 @@ void WatchPool() {
     }
 }
 
+// a jack spot whose car the vehicle list does not hold crashed the spot getter; it now reads as an empty spot, through
+// the getter's own exit for that, which has the same stack
+constexpr uintptr_t kSpotCar = 0x747eb5, kSpotCarBack = 0x747ebf, kSpotNone = 0x747e84;
+const uint8_t kSpotCarOrig[10] = {0x8b, 0x40, 0x14, 0x50, 0x8d, 0x8f, 0x00, 0x21, 0x00, 0x00};
+
+// a 5-byte jmp/call written to `out`, to be placed at `at`
+void Rel32(uint8_t* out, uintptr_t at, uint8_t op, uintptr_t to) {
+    out[0] = op;
+    int32_t d = static_cast<int32_t>(to - (at + 5));
+    memcpy(out + 1, &d, 4);
+}
+
+// true when finished either way (patched, already patched, or given up)
+bool GuardSpotCar(bool lastChance) {
+    auto at = reinterpret_cast<uint8_t*>(kSpotCar);
+    __try {
+        if (at[0] == 0xe9) {
+            Log("spot car guard: already patched");
+            return true;
+        }
+        if (memcmp(at, kSpotCarOrig, sizeof kSpotCarOrig)) {
+            if (lastChance) Log("spot car guard: code differs - nothing written");
+            return lastChance;
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return lastChance;
+    }
+    auto cave = reinterpret_cast<uint8_t*>(LM_AllocMemory(64, LM_PROT_XRW));
+    if (!cave || cave == reinterpret_cast<uint8_t*>(LM_ADDRESS_BAD)) {
+        Log("spot car guard: no memory - nothing written");
+        return true;
+    }
+    uint8_t* c = cave;
+    *c++ = 0x85, *c++ = 0xc0;                          // test eax, eax
+    *c++ = 0x0f, *c++ = 0x84;                          // jz kSpotNone
+    int32_t d = static_cast<int32_t>(kSpotNone - (reinterpret_cast<uintptr_t>(c) + 4));
+    memcpy(c, &d, 4), c += 4;
+    memcpy(c, kSpotCarOrig, sizeof kSpotCarOrig), c += sizeof kSpotCarOrig;   // the replaced instructions
+    Rel32(c, reinterpret_cast<uintptr_t>(c), 0xe9, kSpotCarBack);
+    uint8_t jmp[10];
+    memset(jmp, 0x90, sizeof jmp);
+    Rel32(jmp, kSpotCar, 0xe9, reinterpret_cast<uintptr_t>(cave));
+    lm_prot_t old;
+    if (!LM_ProtMemory(kSpotCar, sizeof jmp, LM_PROT_XRW, &old)) return true;
+    const bool ok = LM_WriteMemory(kSpotCar, jmp, sizeof jmp) == sizeof jmp;
+    LM_ProtMemory(kSpotCar, sizeof jmp, old, nullptr);
+    FlushInstructionCache(GetCurrentProcess(), nullptr, 0);
+    Log("spot car guard: %s", ok ? "written" : "write failed");
+    return true;
+}
+
 DWORD WINAPI Install(LPVOID) {
     Group groups[3] = {{"jack spots"}, {"draw lists"}, {"car locator arena"}};
     for (const Site& s : kSites) groups[0].patches.push_back({&s, Field(s) + kDelta});
@@ -311,9 +362,11 @@ DWORD WINAPI Install(LPVOID) {
                 return 0;
             }
     const DWORD t0 = GetTickCount();
+    bool guarded = false;
     for (;;) {
         const bool last = GetTickCount() - t0 > 120000;
-        bool all = true;
+        if (!guarded) guarded = GuardSpotCar(last);
+        bool all = guarded;
         for (Group& g : groups) {
             if (!g.done) g.done = TryGroup(g, last);
             all &= g.done;

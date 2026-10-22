@@ -9,6 +9,8 @@ next to `NFS13.exe` (needs an ASI loader). It writes `NFS13Unlimiter.log` next t
 - **Car locator buffer:** 3 KB -> 8 KB per car. Fixes a crash with cars that have many lights or sirens.
 - **VFX pool:** 540 -> 1080 resources, so GLOBALEFFECTS.BNDL can hold more effects.
 - **UI streaming pool:** 2560 -> 5120 resources. Fixes the world map hanging with extra ui elements.
+- **Jack spots with unknown cars:** a jack spot holding a car the vehicle list does not know reads as empty instead of
+  crashing the game.
 
 Each change is checked against the game's original code first. On a different game version it is skipped and the
 log says so.
