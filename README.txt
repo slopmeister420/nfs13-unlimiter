@@ -15,8 +15,10 @@ WHAT IT RAISES
 
 INSTALLATION
 Install Ultimate ASI Loader (32-bit): https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases
-Then extract this archive into the game directory. It replaces JackspotLimit.asi; delete that
-file if you have it. The plugin writes NFS13Unlimiter.log next to itself.
+Then extract this archive into the game directory. The included dinput8.ini makes the loader
+load plugins in this game; if you already have a dinput8.ini, it needs the same three lines.
+It replaces JackspotLimit.asi; delete that file if you have it. The plugin writes
+NFS13Unlimiter.log next to itself.
 
 Each change is checked against the game's original code first. On a different game version that
 change is skipped and the log says so.

@@ -18,6 +18,8 @@ Remove-Item $stage -Recurse -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item (Join-Path $build "Release\NFS13Unlimiter.asi") $stage
 Copy-Item (Join-Path $root "README.txt") $stage
+# ultimate asi loader loads no plugins in this game without it
+Copy-Item (Join-Path $root "dinput8.ini") $stage
 # libmem is linked statically: ship its licence and those of what it bundles
 $licenses = Join-Path $stage "licenses"
 New-Item -ItemType Directory -Force $licenses | Out-Null

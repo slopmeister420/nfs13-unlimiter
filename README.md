@@ -1,7 +1,8 @@
 # nfs13-unlimiter
 
 `NFS13Unlimiter.asi` raises fixed limits in Need for Speed Most Wanted (2012, PC), for mods that add content. Put it
-next to `NFS13.exe` (needs an ASI loader). It writes `NFS13Unlimiter.log` next to itself.
+next to `NFS13.exe` (needs an ASI loader, with the `dinput8.ini` from the package so it loads plugins in this game).
+It writes `NFS13Unlimiter.log` next to itself.
 
 - **Jack spots:** 185 -> 240.
 - **Draw lists:** the ui lists go from 512 to 2048 items and every other list doubles. Fixes the crash when hovering
