@@ -350,14 +350,14 @@ DWORD WINAPI Install(LPVOID) {
     for (const Raise& r : kDrawListSites) groups[1].patches.push_back({&r.site, r.value});
     for (const Raise& r : kArenaSites) groups[2].patches.push_back({&r.site, r.value});
     // every site must lie inside the game's image
-    lm_module_t exe;
-    if (!LM_FindModule("NFS13.exe", &exe)) {
-        Log("NFS13.exe not found - nothing written");
-        return 0;
-    }
+    // the module snapshot behind LM_FindModule fails at random while the game loads dlls; this cannot
+    const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    const auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
+    const auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
+    const uintptr_t end = base + nt->OptionalHeader.SizeOfImage;
     for (const Group& g : groups)
         for (const Patch& p : g.patches)
-            if (p.site->addr < exe.base || p.site->addr + p.site->len > exe.end) {
+            if (p.site->addr < base || p.site->addr + p.site->len > end) {
                 Log("%s: site %08x outside NFS13.exe - nothing written", g.name, p.site->addr);
                 return 0;
             }
